@@ -1,5 +1,5 @@
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy 
+from flask import Flask, render_template, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///score.db"
@@ -8,38 +8,46 @@ db = SQLAlchemy(app)
 
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    username = db.Column(db.String(50), nullable=False)
     mode = db.Column(db.Integer, nullable=False)
     score = db.Column(db.Integer, nullable=False)
-    user = db.Column(db.String(20), unique=True, nullable=False)
 
 with app.app_context():
     db.create_all()
 
 @app.route('/')
 def index():
-    return render_template('index.html') # type: ignore
+    return render_template('Index.html')
 
 @app.post("/submit_score")
 def submit_score():
-    if "user_id" not in session:
-        return jsonify({"error": "not logged in"}), 403
-
     data = request.json
+
     score = Score(
-        user_id=session["user_id"],
+        username=data["username"],
         mode=data["mode"],
         score=data["score"]
     )
+
     db.session.add(score)
     db.session.commit()
+
     return jsonify({"status": "ok"})
 
-@app.get("/leaderboard")
+@app.route('/Test')
+def test():
+    return render_template('Test.html')
+
+@app.route('/Leaderboard')
+def leaderboard_page():
+    return render_template('Leaderboard.html')
+
+@app.get("/Leaderboard/<int:mode>")
 def leaderboard(mode):
     top = Score.query.filter_by(mode=mode).order_by(Score.score.desc()).limit(10)
     results = [
-        {"username": s.user.username, "score": s.score}
+        {"username": s.username, "score": s.score}
         for s in top
     ]
     return jsonify(results)
+
