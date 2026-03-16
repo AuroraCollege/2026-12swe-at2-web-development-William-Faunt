@@ -1,31 +1,24 @@
-from flask import Flask, request, jsonify, session
-from flask_bcrypt import Bcrypt 
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy 
 
 app = Flask(__name__)
-app.secret_key = "your-secret-key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///reaction.db"
-
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///score.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
 
-@app.post("/register")
-def register():
-    data = request.json
-    hashed = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
-    user = User(username=data["username"], password_hash=hashed)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify({"status": "ok"})
-@app.post("/login")
+class Score(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    mode = db.Column(db.Integer, nullable=False)
+    score = db.Column(db.Integer, nullable=False)
+    user = db.Column(db.String(20), unique=True, nullable=False)
 
-def login():
-    data = request.json
-    user = User.query.filter_by(username=data["username"]).first()
-    if user and bcrypt.check_password_hash(user.password_hash, data["password"]):
-        session["user_id"] = user.id
-        return jsonify({"status": "ok"})
-    return jsonify({"status": "error"}), 401
+with app.app_context():
+    db.create_all()
+
+@app.route('/')
+def index():
+    return render_template('index.html') # type: ignore
 
 @app.post("/submit_score")
 def submit_score():
@@ -42,7 +35,7 @@ def submit_score():
     db.session.commit()
     return jsonify({"status": "ok"})
 
-@app.get("/leaderboard/<int:mode>")
+@app.get("/leaderboard")
 def leaderboard(mode):
     top = Score.query.filter_by(mode=mode).order_by(Score.score.desc()).limit(10)
     results = [
