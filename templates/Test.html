@@ -25,86 +25,118 @@
     <button class="btn btn-success" onclick="startGame(60)">Start 60s</button>
     <button class="btn btn-success" onclick="startGame(90)">Start 90s</button>
 </div>
-<div id="game-area">
-
-</div>
-<div id="timer">
-
-</div>
-<div id="score">
-    
+<div class="text-center" style="display: flex; gap: 20px; font-size: 24px; font-weight: bold;">
+    <div>Time: <span id="timer">0</span></div>
+    <div>Score: <span id="scoreDisplay">0</span></div>
 </div>
 
+<div id="game-area"></div>
 
-<h2>Score: <span id="score">0</span></h2>
-let score = 0;
-let gameActive = false;
+<div id="scorePopup" style="
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: darkslategray;
+    padding: 20px;
+    border: 2px solid rgb(0, 255, 0);
+    text-align: center;
+    z-index: 9999;
+">
+    <h2>Time's up!</h2>
+    <p>Your score: <span id="finalScore"></span></p>
+    <label>Enter your name:</label><br>
+    <input id="popupName" type="text" placeholder="Your name"><br><br>
+    <button onclick="submitPopupScore()">Submit Score</button>
+    <button onclick="closePopup()">Cancel</button>
+</div>
 <script>
-function startGame(duration) {
-    score = 0;
-    gameActive = true;
-    const endTime = Date.now() + duration * 1000;
-
-    function spawnCircle() {
-        if (!gameActive || Date.now() > endTime) {
-            endGame(duration);
-            return;
-        }
-
-        const circle = document.createElement("div");
-        circle.classList.add("circle");
-        circle.style.background = "green";
-
-        const area = document.getElementById("game-area");
-        const x = Math.random() * (area.clientWidth - 40);
-        const y = Math.random() * (area.clientHeight - 40);
-
-        circle.style.left = x + "px";
-        circle.style.top = y + "px";
-
-        let turnedRedAt = null;
-
-        setTimeout(() => {
-            circle.style.background = "red";
-            turnedRedAt = Date.now();
-        }, Math.random() * 2000 + 1000);
-
-        circle.onclick = () => {
-            if (!turnedRedAt) {
-                score -= 50;
-            } else {
-                const reaction = Date.now() - turnedRedAt;
-                score += Math.max(0, 1000 - reaction);
+    let score = 0;
+    let gameActive = false;
+    let timerInterval = null;
+    function startGame(duration) {
+        score = 0;
+        gameActive = true;
+        document.getElementById("scoreDisplay").textContent = score;
+        let timeLeft = duration;
+        document.getElementById("timer").textContent = timeLeft;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            document.getElementById("timer").textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                endGame(duration);
             }
-            circle.remove();
+        }, 1000);
+
+        const endTime = Date.now() + duration * 1000;
+        function spawnCircle() {
+            if (!gameActive || Date.now() > endTime) {
+                endGame(duration);
+                return;
+            }
+            const circle = document.createElement("div");
+            circle.classList.add("circle");
+            circle.style.background = "green";
+            const area = document.getElementById("game-area");
+            const x = Math.random() * (area.clientWidth - 40);
+            const y = Math.random() * (area.clientHeight - 40);
+            circle.style.left = x + "px";
+            circle.style.top = y + "px";
+            let turnedRedAt = null;
+            setTimeout(() => {
+                circle.style.background = "red";
+                turnedRedAt = Date.now();
+            }, Math.random() * 2000 + 1000);
+            circle.onclick = () => {
+                if (!turnedRedAt) {
+                    score += 100;
+                } else {
+                    score += 50
+                }
+                document.getElementById("scoreDisplay").textContent = score;
+                circle.remove();
+            };
+                document.getElementById("game-area").onclick = (event) => {
+            if (event.target.id === "game-area") {
+                score -= 100;
+                document.getElementById("scoreDisplay").textContent = score;
+            }
         };
+            area.appendChild(circle);
+            setTimeout(spawnCircle, 800);
+        }
+        spawnCircle();
 
-        area.appendChild(circle);
-
-        setTimeout(spawnCircle, 800);
+    function endGame(mode) {
+        gameActive = false;
+        clearInterval(timerInterval);
+        document.getElementById("finalScore").textContent = score;
+    document.getElementById("scorePopup").style.display = "block";
+    window.lastMode = mode;
     }
 
-    spawnCircle();
-}
-
-function endGame(mode) {
-    gameActive = false;
-
-    const username = document.getElementById("username").value || "Anonymous";
-
+    function submitPopupScore() {
+    const username = document.getElementById("popupName").value || "Anonymous";
     fetch("/submit_score", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
-            username: document.getElementById("username").value,
-            mode: mode,
+            username: username,
+            mode: window.lastMode,
             score: score
         })
+            .then(() => {
+        window.location.href = `/Leaderboard?mode=${window.lastMode}`;
+            })
     });
+    closePopup();
+    }
+    function closePopup() {
+        document.getElementById("scorePopup").style.display = "none";
+    }
 }
 </script>
-
-
 </body>
 
 {% endblock %}
