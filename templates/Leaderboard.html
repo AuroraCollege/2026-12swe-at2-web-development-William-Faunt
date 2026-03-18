@@ -40,7 +40,7 @@
                 <th>Score</th>
             </tr>
         </thead>
-        <tbody id="leaderboardTable"></tbody>
+        <tbody id="LeaderboardTable"></tbody>
     </table>
 </div>
 <button class="btn btn-warning" href="Test.html">Retry test?</button>
@@ -48,10 +48,10 @@
 function loadLeaderboard() {
     const mode = document.getElementById("modeSelect").value;
 
-    fetch(`/leaderboard/${mode}`)
+    fetch(`/Leaderboard/${mode}`)
         .then(r => r.json())
         .then(data => {
-            const tbody = document.querySelector("#leaderboardTable tbody");
+            const tbody = document.querySelector("#LeaderboardTable");
             tbody.innerHTML = "";
 
             data.forEach((row, i) => {
@@ -64,6 +64,7 @@ function loadLeaderboard() {
                 tbody.appendChild(tr);
             });
         });
+    }
     window.onload = () => {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get("mode");
@@ -73,7 +74,6 @@ function loadLeaderboard() {
         loadLeaderboard();
     }
 };
-}
 </script>
 
 </body>

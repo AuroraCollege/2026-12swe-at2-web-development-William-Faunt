@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///score.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////workspaces/2026-12swe-at2-web-development-William-Faunt/score.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
@@ -12,8 +12,7 @@ class Score(db.Model):
     mode = db.Column(db.Integer, nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
-with app.app_context():
-    db.create_all()
+
 
 @app.route('/')
 def index():
@@ -44,7 +43,7 @@ def leaderboard_page():
 
 @app.get("/Leaderboard/<int:mode>")
 def leaderboard(mode):
-    top = Score.query.filter_by(mode=mode).order_by(Score.score.desc()).limit(10)
+    top = Score.query.filter_by(mode=mode).order_by(Score.score.desc()).limit(10).all()
     results = [
         {"username": s.username, "score": s.score}
         for s in top
