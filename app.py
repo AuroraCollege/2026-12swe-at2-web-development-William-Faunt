@@ -12,27 +12,20 @@ class Score(db.Model):
     mode = db.Column(db.Integer, nullable=False)
     score = db.Column(db.Integer, nullable=False)
 
-
-
 @app.route('/')
 def index():
     return render_template('Index.html')
-
 @app.post("/submit_score")
 def submit_score():
     data = request.json
-
     score = Score(
         username=data["username"],
         mode=data["mode"],
         score=data["score"]
-    )
-
+        )
     db.session.add(score)
     db.session.commit()
-
     return jsonify({"status": "ok"})
-
 @app.route('/Test')
 def test():
     return render_template('Test.html')
@@ -40,7 +33,6 @@ def test():
 @app.route('/Leaderboard')
 def leaderboard_page():
     return render_template('Leaderboard.html')
-
 @app.get("/Leaderboard/<int:mode>")
 def leaderboard(mode):
     top = Score.query.filter_by(mode=mode).order_by(Score.score.desc()).limit(10).all()
